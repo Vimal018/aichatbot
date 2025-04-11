@@ -20,9 +20,16 @@ export const generateChatCompletion = async (
 ) => {
   const { message } = req.body;
 
+  // Log incoming request details
+  console.log("generateChatCompletion request:", {
+    userId: res.locals.jwtData.id,
+    message,
+  });
+
   try {
     const user = await User.findById(res.locals.jwtData.id);
     if (!user) {
+      console.error("User not found for ID:", res.locals.jwtData.id);
       return res
         .status(401)
         .json({ message: "User not registered or Token Malfunctioned" });
@@ -45,6 +52,12 @@ export const generateChatCompletion = async (
     chats.push({ role: "user", content: message });
     user.chats.push({ role: "user", content: message });
 
+    // Log API call to OpenRouter
+    console.log("Sending message to OpenRouter API:", {
+      model: "openai/gpt-3.5-turbo",
+      messages: chats,
+    });
+
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
@@ -57,9 +70,10 @@ export const generateChatCompletion = async (
       }),
     });
 
+    // Handle OpenRouter response errors
     if (!response.ok) {
       const errorText = await response.text();
-      console.error("OpenRouter Error Response:", errorText);
+      console.error("OpenRouter API Error:", errorText);
       return res.status(500).json({ message: "Failed to get AI response" });
     }
 
@@ -67,6 +81,7 @@ export const generateChatCompletion = async (
     const responseMessage = data.choices?.[0]?.message;
 
     if (responseMessage) {
+      console.log("Received AI response:", responseMessage);
       user.chats.push(responseMessage);
       await user.save();
     }
@@ -86,10 +101,12 @@ export const sendChatsToUser = async (
   try {
     const user = await User.findById(res.locals.jwtData.id);
     if (!user) {
+      console.error("User not found for ID:", res.locals.jwtData.id);
       return res.status(401).send("User not registered OR Token malfunctioned");
     }
 
     if (user._id.toString() !== res.locals.jwtData.id) {
+      console.error("Permissions didn't match for user ID:", res.locals.jwtData.id);
       return res.status(401).send("Permissions didn't match");
     }
 
@@ -108,15 +125,19 @@ export const deleteChats = async (
   try {
     const user = await User.findById(res.locals.jwtData.id);
     if (!user) {
+      console.error("User not found for ID:", res.locals.jwtData.id);
       return res.status(401).send("User not registered OR Token malfunctioned");
     }
 
     if (user._id.toString() !== res.locals.jwtData.id) {
+      console.error("Permissions didn't match for user ID:", res.locals.jwtData.id);
       return res.status(401).send("Permissions didn't match");
     }
 
-    user.chats.splice(0); // Correct way to clear a Mongoose DocumentArray
+    user.chats.splice(0); // Clear the chats
     await user.save();
+
+    console.log("Chats deleted successfully for user ID:", res.locals.jwtData.id);
 
     return res.status(200).json({ message: "OK" });
   } catch (error: any) {
