@@ -1,10 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import User from "../models/User.js";
-import fetch from "node-fetch"; // Ensure you have node-fetch installed
+import fetch from "node-fetch";
 
 interface ChatMessage {
   role: "user" | "assistant" | "system";
   content: string;
+}
+
+interface OpenRouterResponse {
+  choices: {
+    message: ChatMessage;
+  }[];
 }
 
 export const generateChatCompletion = async (
@@ -31,13 +37,13 @@ export const generateChatCompletion = async (
       {
         role: "system",
         content:
-          "You are a health care AI assistant. Offer tools for managing health, including symptom checking, medication reminders, and home remedies in less than 50 words.",
+          "you are a health care AI assistant. Offer tools for managing health, including symptom checking, medication reminders, and home remedies in less than 50 words",
       },
       ..._chats,
-      { role: "user", content: message },
     ];
 
-    user.chats.push({ content: message, role: "user" });
+    chats.push({ role: "user", content: message });
+    user.chats.push({ role: "user", content: message });
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -51,29 +57,26 @@ export const generateChatCompletion = async (
       }),
     });
 
-    const data = await response.json();
-
-    // Debug logs if something fails
-    if (!data || !data.choices || !data.choices[0]?.message?.content) {
-      console.error("Unexpected OpenRouter response:", JSON.stringify(data));
-      return res.status(500).json({
-        message: "AI model did not return a valid response.",
-        error: data,
-      });
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("OpenRouter Error Response:", errorText);
+      return res.status(500).json({ message: "Failed to get AI response" });
     }
 
-    const responseMessage = data.choices[0].message;
+    const data = (await response.json()) as OpenRouterResponse;
+    const responseMessage = data.choices?.[0]?.message;
 
-    user.chats.push(responseMessage);
-    await user.save();
+    if (responseMessage) {
+      user.chats.push(responseMessage);
+      await user.save();
+    }
 
     return res.status(200).json({ chats: user.chats });
   } catch (error: any) {
-    console.error("Error in generateChatCompletion:", error);
-    return res.status(500).json({ message: "Something went wrong", error: error.message });
+    console.error("generateChatCompletion Error:", error);
+    return res.status(500).json({ message: "Something went wrong" });
   }
 };
-
 
 export const sendChatsToUser = async (
   req: Request,
@@ -81,18 +84,19 @@ export const sendChatsToUser = async (
   next: NextFunction
 ) => {
   try {
-    //user token check
     const user = await User.findById(res.locals.jwtData.id);
     if (!user) {
       return res.status(401).send("User not registered OR Token malfunctioned");
     }
+
     if (user._id.toString() !== res.locals.jwtData.id) {
       return res.status(401).send("Permissions didn't match");
     }
+
     return res.status(200).json({ message: "OK", chats: user.chats });
-  } catch (error) {
-    console.log(error);
-    return res.status(200).json({ message: "ERROR", cause: error.message });
+  } catch (error: any) {
+    console.error("sendChatsToUser Error:", error);
+    return res.status(500).json({ message: "ERROR", cause: error.message });
   }
 };
 
@@ -102,20 +106,20 @@ export const deleteChats = async (
   next: NextFunction
 ) => {
   try {
-    //user token check
     const user = await User.findById(res.locals.jwtData.id);
     if (!user) {
       return res.status(401).send("User not registered OR Token malfunctioned");
     }
+
     if (user._id.toString() !== res.locals.jwtData.id) {
       return res.status(401).send("Permissions didn't match");
     }
-    //@ts-ignore
+
     user.chats = [];
     await user.save();
     return res.status(200).json({ message: "OK" });
-  } catch (error) {
-    console.log(error);
-    return res.status(200).json({ message: "ERROR", cause: error.message });
+  } catch (error: any) {
+    console.error("deleteChats Error:", error);
+    return res.status(500).json({ message: "ERROR", cause: error.message });
   }
 };
