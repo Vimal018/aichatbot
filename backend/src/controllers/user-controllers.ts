@@ -37,7 +37,7 @@ export const userSignup = async(
         res.clearCookie(COOKIE_NAME, {
           httpOnly: true,
           secure: true,
-          sameSite: "None",
+          sameSite: "none",
           signed: true,
           path: "/",
         });
@@ -50,7 +50,7 @@ export const userSignup = async(
               path: "/",
               httpOnly: true,
               secure: true,             // ✅ Required for HTTPS (Vercel uses HTTPS)
-              sameSite: "None",         // ✅ Required for cross-origin cookies
+              sameSite: "none",         // ✅ Required for cross-origin cookies
               expires,
               signed: true,
             });
@@ -85,7 +85,7 @@ export const userLogin = async(
         res.clearCookie(COOKIE_NAME, {
           httpOnly: true,
           secure: true,
-          sameSite: "None",
+          sameSite: "none",
           signed: true,
           path: "/",
         });
@@ -98,7 +98,7 @@ export const userLogin = async(
                 path: "/",
                 httpOnly: true,
                 secure: true,             // ✅ Required for HTTPS (Vercel uses HTTPS)
-                sameSite: "None",         // ✅ Required for cross-origin cookies
+                sameSite: "none",         // ✅ Required for cross-origin cookies
                 expires,
                 signed: true,
             });
@@ -143,7 +143,7 @@ export const userLogout = async (req: Request, res: Response) => {
        res.clearCookie(COOKIE_NAME, {
               httpOnly: true,
               secure: true,
-              sameSite: "None",
+              sameSite: "none",
               signed: true,
               path: "/",
          });
