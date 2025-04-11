@@ -12,8 +12,13 @@ const app = express();
 //app.use(cors({ origin: "http://localhost:5173", credentials: true }));
 
 app.use(cors({
-  origin: ["http://localhost:5173", "http://127.0.0.1:5173"], // Allow both localhost and 127.0.0.1
-  credentials: true, // Allow cookies to be sent with requests
+  origin: [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "https://aichatbot-2ujhjycjt-vimals-projects-dd08006a.vercel.app",
+    "https://aichatbot-eight-indol.vercel.app"
+  ],
+  credentials: true
 }));
 
 app.use(express.json());
