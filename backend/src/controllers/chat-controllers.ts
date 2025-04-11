@@ -115,8 +115,9 @@ export const deleteChats = async (
       return res.status(401).send("Permissions didn't match");
     }
 
-    user.chats = [];
+    user.chats.splice(0); // Correct way to clear a Mongoose DocumentArray
     await user.save();
+
     return res.status(200).json({ message: "OK" });
   } catch (error: any) {
     console.error("deleteChats Error:", error);
