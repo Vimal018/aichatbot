@@ -13,12 +13,14 @@ export const generateChatCompletion = async (
   next: NextFunction
 ) => {
   const { message } = req.body;
+
   try {
     const user = await User.findById(res.locals.jwtData.id);
-    if (!user)
+    if (!user) {
       return res
         .status(401)
         .json({ message: "User not registered or Token Malfunctioned" });
+    }
 
     const _chats: ChatMessage[] = user.chats.map((chat: any) => ({
       role: chat.role,
@@ -29,19 +31,18 @@ export const generateChatCompletion = async (
       {
         role: "system",
         content:
-          "you are a health care AI assistant. Offer tools for managing health, including symptom checking, medication reminders, and home remedies in less than 50 words",
+          "You are a health care AI assistant. Offer tools for managing health, including symptom checking, medication reminders, and home remedies in less than 50 words.",
       },
       ..._chats,
+      { role: "user", content: message },
     ];
 
-    chats.push({ content: message, role: "user" });
     user.chats.push({ content: message, role: "user" });
 
-    // 🌐 Call OpenRouter directly
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`, // store it in .env
+        Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -50,20 +51,29 @@ export const generateChatCompletion = async (
       }),
     });
 
-    const data = (await response.json()) as { choices: { message: ChatMessage }[] };
-    const responseMessage = data.choices[0]?.message;
+    const data = await response.json();
 
-    if (responseMessage) {
-      user.chats.push(responseMessage);
-      await user.save();
+    // Debug logs if something fails
+    if (!data || !data.choices || !data.choices[0]?.message?.content) {
+      console.error("Unexpected OpenRouter response:", JSON.stringify(data));
+      return res.status(500).json({
+        message: "AI model did not return a valid response.",
+        error: data,
+      });
     }
 
+    const responseMessage = data.choices[0].message;
+
+    user.chats.push(responseMessage);
+    await user.save();
+
     return res.status(200).json({ chats: user.chats });
-  } catch (error) {
-    console.log(error);
-    return res.status(500).json({ message: "Something went wrong" });
+  } catch (error: any) {
+    console.error("Error in generateChatCompletion:", error);
+    return res.status(500).json({ message: "Something went wrong", error: error.message });
   }
 };
+
 
 export const sendChatsToUser = async (
   req: Request,
