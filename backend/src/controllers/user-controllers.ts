@@ -35,22 +35,26 @@ export const userSignup = async(
         // create token and store cookie
 
         res.clearCookie(COOKIE_NAME, {
-            httpOnly: true,
-            domain: "localhost", 
-            signed: true,
-            path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "None",
+          signed: true,
+          path: "/",
         });
+
 
         const token = createToken(user._id.toString(), user.email, "7d");
         const expires = new Date();
         expires.setDate(expires.getDate() + 7);
-        res.cookie(COOKIE_NAME, token, { 
-            path: "/", 
-            domain: "localhost", 
-            expires,
-            httpOnly: true,
-            signed: true,
-        });
+        res.cookie(COOKIE_NAME, token, {
+              path: "/",
+              httpOnly: true,
+              secure: true,             // ✅ Required for HTTPS (Vercel uses HTTPS)
+              sameSite: "None",         // ✅ Required for cross-origin cookies
+              expires,
+              signed: true,
+            });
+
 
 
         return res
@@ -79,22 +83,26 @@ export const userLogin = async(
             return res.status(403).send("Incorrect Password");
         }
         res.clearCookie(COOKIE_NAME, {
-            httpOnly: true,
-            domain: "localhost", 
-            signed: true,
-            path: "/",
+          httpOnly: true,
+          secure: true,
+          sameSite: "None",
+          signed: true,
+          path: "/",
         });
+
 
         const token = createToken(user._id.toString(), user.email, "7d");
         const expires = new Date();
         expires.setDate(expires.getDate() + 7);
-        res.cookie(COOKIE_NAME, token, { 
-            path: "/", 
-            domain: "localhost", 
-            expires,
-            httpOnly: true,
-            signed: true,
-        });
+        res.cookie(COOKIE_NAME, token, {
+                path: "/",
+                httpOnly: true,
+                secure: true,             // ✅ Required for HTTPS (Vercel uses HTTPS)
+                sameSite: "None",         // ✅ Required for cross-origin cookies
+                expires,
+                signed: true,
+            });
+
 
         return res
         .status(200)
@@ -132,12 +140,14 @@ export const verifyUser = async(
 
 export const userLogout = async (req: Request, res: Response) => {
     try {
-        res.clearCookie(COOKIE_NAME, {
-            httpOnly: true,
-            domain: "localhost", 
-            signed: true,
-            path: "/",
-        });
+       res.clearCookie(COOKIE_NAME, {
+              httpOnly: true,
+              secure: true,
+              sameSite: "None",
+              signed: true,
+              path: "/",
+         });
+
 
         return res.status(200).json({ message: "Logout successful" });
     } catch (error) {
