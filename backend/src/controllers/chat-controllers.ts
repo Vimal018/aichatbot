@@ -52,11 +52,8 @@ export const generateChatCompletion = async (
     chats.push({ role: "user", content: message });
     user.chats.push({ role: "user", content: message });
 
-    // Log API call to OpenRouter
-    console.log("Sending message to OpenRouter API:", {
-      model: "openai/gpt-3.5-turbo",
-      messages: chats,
-    });
+    // Log API key (for debugging purposes)
+    console.log("OpenRouter API Key:", process.env.OPENROUTER_API_KEY);
 
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
@@ -70,7 +67,6 @@ export const generateChatCompletion = async (
       }),
     });
 
-    // Handle OpenRouter response errors
     if (!response.ok) {
       const errorText = await response.text();
       console.error("OpenRouter API Error:", errorText);
@@ -92,6 +88,7 @@ export const generateChatCompletion = async (
     return res.status(500).json({ message: "Something went wrong" });
   }
 };
+
 
 export const sendChatsToUser = async (
   req: Request,
